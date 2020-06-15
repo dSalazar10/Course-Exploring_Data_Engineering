@@ -39,9 +39,6 @@ Resources:
       #  - Tag
       # The ID of the VPC for the security group
       # String
-      VpcId: 
-        Fn::ImportValue:
-          !Sub "${EnvironmentName}-VPCID"
 
   RedshiftCluster:
     Type: AWS::Redshift::Cluster
@@ -50,28 +47,27 @@ Resources:
       # AutomatedSnapshotRetentionPeriod: Integer
       # AvailabilityZone: String
       ClusterIdentifier: redshift-cluster
-      ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
+      #ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
       # ClusterSecurityGroups: 
       #   - String
-      # ClusterSubnetGroupName: String
+      # ClusterSubnetGroupName: !Ref RedshiftClusterSubnetGroup
       ClusterType: single-node #multi-node
       # ClusterVersion: String
       DBName: !Ref RedShiftDBName
       # ElasticIp: String
-      # Encrypted: Boolean
+      #Encrypted: true
       # HsmClientCertificateIdentifier: String
       # HsmConfigurationIdentifier: String
       IamRoles: 
         - !GetAtt RedshiftIAMRole.Arn
-      KmsKeyId: rs-key
-      LoggingProperties: 
-        LoggingProperties:
-          BucketName: !Ref RedshiftLoggingS3Bucket
-          # S3KeyPrefix: String
+      #KmsKeyId: !Ref RedShiftIAMKeys
+      # LoggingProperties:
+      #   BucketName: !Ref RedshiftLoggingS3Bucket
+        # S3KeyPrefix: String
       MasterUsername: !Ref RedShiftUserName
       MasterUserPassword: !Ref RedShiftPassword
       NodeType: dc2.large
-      NumberOfNodes: 1
+      # NumberOfNodes: Integer
       # OwnerAccount: String
       Port: 5439
       # PreferredMaintenanceWindow: String
@@ -81,25 +77,9 @@ Resources:
       # Tags: 
       #   - Tag
       VpcSecurityGroupIds:
-        - !Ref RedshiftSecurityGroup
-
-  RedshiftClusterParameterGroup:
-    Type: AWS::Redshift::ClusterParameterGroup
-    Properties: 
-      Description: Redshift Cluster Parameter group
-      ParameterGroupFamily: redshift-1.0
-      # Parameters: 
-      #   - Parameter
-      # Tags: 
-      #   - Tag
-
-  RedshiftClusterSubnetGroup:
-    Type: AWS::Redshift::ClusterSubnetGroup
-    Properties: 
-      Description: Cluster subnet group
-      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${EnvironmentName}-PRIV-NETS'}]
-      # Tags: 
-      #   - Tag
+        - !GetAtt 
+          - RedshiftSecurityGroup
+          - GroupId
 
   RedShiftIAMUser:
     Type: AWS::IAM::User
@@ -176,9 +156,6 @@ Resources:
       RoleName: RedshiftIAMRole
       # Tags: 
       #   - Tag
-        
-  RedshiftLoggingS3Bucket:
-    Type: AWS::S3::Bucket
 
 Outputs:
   RedshiftClusterEndpoint:
@@ -200,12 +177,6 @@ Outputs:
                - ' -d '
                - !Ref RedShiftDBName
 
-  RedshiftParameterGroupName:
-    Description: Name of the Redshift Parameter Group
-    Value: !Ref RedshiftClusterParameterGroup
-    Export:
-      Name: !Sub '${EnvironmentName}-RedshiftParameterGroupName'
-    
   RedshiftDatabaseName:
     Description: Name of the Redshift Database
     Value: !Ref RedShiftDBName
@@ -217,12 +188,6 @@ Outputs:
     Export:
       Name: !Sub '${EnvironmentName}-RedshiftUsername'
     
-  RedshiftLoggingS3Bucket:
-    Description: Amazon S3 bucket created for audit logging
-    Value: !Ref RedshiftLoggingS3Bucket
-    Export:
-      Name: !Sub '${EnvironmentName}-RedshiftLoggingS3Bucket'
-
   RedShiftAccessKey:
     Value: !Ref 'RedShiftIAMKeys'
     Description: AWSAccessKeyId of User
