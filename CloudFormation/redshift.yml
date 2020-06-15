@@ -39,6 +39,7 @@ Resources:
       #  - Tag
       # The ID of the VPC for the security group
       # String
+      VpcId: {'Fn::ImportValue': !Sub '${EnvironmentName}-VPCID'}
 
   RedshiftCluster:
     Type: AWS::Redshift::Cluster
@@ -47,10 +48,11 @@ Resources:
       # AutomatedSnapshotRetentionPeriod: Integer
       # AvailabilityZone: String
       ClusterIdentifier: redshift-cluster
-      #ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
+      ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
       # ClusterSecurityGroups: 
       #   - String
-      # ClusterSubnetGroupName: !Ref RedshiftClusterSubnetGroup
+      ClusterSubnetGroupName:
+        Ref: RedshiftClusterSubnetGroup
       ClusterType: single-node #multi-node
       # ClusterVersion: String
       DBName: !Ref RedShiftDBName
@@ -60,7 +62,7 @@ Resources:
       # HsmConfigurationIdentifier: String
       IamRoles: 
         - !GetAtt RedshiftIAMRole.Arn
-      #KmsKeyId: !Ref RedShiftIAMKeys
+      KmsKeyId: rs-key
       # LoggingProperties:
       #   BucketName: !Ref RedshiftLoggingS3Bucket
         # S3KeyPrefix: String
@@ -71,15 +73,39 @@ Resources:
       # OwnerAccount: String
       Port: 5439
       # PreferredMaintenanceWindow: String
-      PubliclyAccessible: false
+      PubliclyAccessible: true
       # SnapshotClusterIdentifier: String
       # SnapshotIdentifier: String
       # Tags: 
       #   - Tag
       VpcSecurityGroupIds:
-        - !GetAtt 
-          - RedshiftSecurityGroup
-          - GroupId
+        - Ref: RedshiftSecurityGroup
+
+  RedshiftClusterSubnetGroup:
+    Type: AWS::Redshift::ClusterSubnetGroup
+    Properties:
+      Description: Cluster subnet group
+      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${EnvironmentName}-PRIV-NETS'}]
+
+  RedshiftClusterParameterGroup:
+    Type: 'AWS::Redshift::ClusterParameterGroup'
+    Properties:
+      Description: Redshift Cluster Parameter Group
+      ParameterGroupFamily: redshift-1.0
+      Parameters:
+        - ParameterName: enable_user_activity_logging
+          ParameterValue: false # change this to true to monitor logging
+        - ParameterName: require_ssl
+          ParameterValue: true
+        - ParameterName: auto_analyze
+          ParameterValue: true
+        - ParameterName: statement_timeout
+          ParameterValue: 43200000
+        - ParameterName: max_concurrency_scaling_clusters
+          ParameterValue: 1 # 1-10
+        - ParameterName: "wlm_json_configuration"
+          ParameterValue: "[ {\"query_group\" : [ ], \"query_group_wild_card\" : 0, \"user_group\" : [ ], \"user_group_wild_card\" : 0, \"concurrency_scaling\" : \"auto\", \"rules\" : [ { \"rule_name\" : \"DiskSpilling\", \"predicate\" : [ { \"metric_name\" : \"query_temp_blocks_to_disk\", \"operator\" : \">\",  \"value\" : 100000} ], \"action\" : \"log\", \"value\" : \"\"}, { \"rule_name\" : \"RowJoining\", \"predicate\" : [ { \"metric_name\" : \"join_row_count\", \"operator\" : \">\", \"value\" : 1000000000 } ], \"action\" : \"log\", \"value\" : \"\" } ], \"auto_wlm\" : true}, {\"short_query_queue\" : true} ]"
+      
 
   RedShiftIAMUser:
     Type: AWS::IAM::User
@@ -184,14 +210,21 @@ Outputs:
       Name: !Sub '${EnvironmentName}-RedshiftDatabaseName'
     
   RedshiftUsername:
+    Description: The username of the Redshift Cluster
     Value: !Ref RedShiftUserName
     Export:
       Name: !Sub '${EnvironmentName}-RedshiftUsername'
     
   RedShiftAccessKey:
+    Description: Access key for the encrypted cluster
     Value: !Ref 'RedShiftIAMKeys'
     Description: AWSAccessKeyId of User
+    Export:
+      Name: !Sub '${EnvironmentName}-AKey'
 
   RedShiftSecretKey:
+    Description: Secret key for the exncrypted cluster
     Value: !GetAtt [RedShiftIAMKeys, SecretAccessKey]
     Description: AWSSecretAccessKey of User
+    Export:
+      Name: !Sub '${EnvironmentName}-SKey'
