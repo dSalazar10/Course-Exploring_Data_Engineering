@@ -163,8 +163,16 @@ Resources:
       # MaxSessionDuration: Integer
       Path: "/"
       # PermissionsBoundary: String
-      Policies: 
-        - !Ref RedShiftIAMPolicy
+      Policies:
+        -
+          PolicyName: S3-Access-Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: s3:*
+                Resource: "*"
       RoleName: RedshiftIAMRole
       # Tags: 
       #   - Tag
