@@ -9,7 +9,7 @@
     },
     {
 		"ParameterKey": "RedShiftUserName",
-		"ParameterValue": "AdminUser"
+		"ParameterValue": "adminuser"
     },
     {
 		"ParameterKey": "RedShiftPassword",
