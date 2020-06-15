@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Set docker path name and tag
-CQL="dsalazar10/databases:cql"
+CQL="dsalazar10/cassandra:cql"
 
 # Run container
 docker run -it --rm -e CQLSH_HOST=$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' cassandra-node1) --name cassandra-client --entrypoint=cqlsh $CQL
