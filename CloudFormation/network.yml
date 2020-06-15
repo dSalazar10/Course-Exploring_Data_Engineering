@@ -1,0 +1,347 @@
+Description:
+  Daniel Salazar | May 2020
+
+  This is going to be used to create the VPC, Subnets, NAT Gateways, and Route Tables
+  This will be the underlying infrastructure for the rest of the Operations.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.0.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.1.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.2.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.3.0/24
+
+Resources:
+  VPC: 
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      Tags: 
+        - Key: Name 
+          Value: !Ref EnvironmentName
+          
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      # Any tags to assign to the internet gateway
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      # The ID of the internet gateway
+      # String
+      InternetGatewayId: !Ref InternetGateway
+      # The ID of the VPC
+      # String
+      VpcId: !Ref VPC
+      # The ID of the virtual private gateway
+      #VpnGatewayId: String
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      # Indicates whether a network interface created in this subnet receives an IPv6 address
+      #AssignIpv6AddressOnCreation: Boolean
+      # The Availability Zone of the subnet
+      # String
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      # The IPv4 CIDR block assigned to the subnet
+      # String
+      CidrBlock: !Ref PublicSubnet1CIDR
+      # The IPv6 CIDR block
+      #Ipv6CidrBlock: String
+      # Indicates whether instances launched in this subnet receive a public IPv4 address
+      # Boolean
+      MapPublicIpOnLaunch: true
+      # Any tags assigned to the subnet
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+      # The ID of the VPC the subnet is in
+      # String
+      VpcId: !Ref VPC
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      # Indicates whether a network interface created in this subnet receives an IPv6 address
+      #AssignIpv6AddressOnCreation: Boolean
+      # The Availability Zone of the subnet
+      # String
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      # The IPv4 CIDR block assigned to the subnet
+      # String
+      CidrBlock: !Ref PublicSubnet2CIDR
+      # The IPv6 CIDR block
+      #Ipv6CidrBlock: String
+      # Indicates whether instances launched in this subnet receive a public IPv4 address
+      # Boolean
+      MapPublicIpOnLaunch: true
+      # Any tags assigned to the subnet
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+      # The ID of the VPC the subnet is in
+      # String
+      VpcId: !Ref VPC
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      # Indicates whether a network interface created in this subnet receives an IPv6 address
+      #AssignIpv6AddressOnCreation: Boolean
+      # The Availability Zone of the subnet
+      # String
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      # The IPv4 CIDR block assigned to the subnet
+      # String
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      # The IPv6 CIDR block
+      #Ipv6CidrBlock: String
+      # Indicates whether instances launched in this subnet receive a public IPv4 address
+      # Boolean
+      MapPublicIpOnLaunch: false
+      # Any tags assigned to the subnet
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+      # The ID of the VPC the subnet is in
+      # String
+      VpcId: !Ref VPC
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      # Indicates whether a network interface created in this subnet receives an IPv6 address
+      #AssignIpv6AddressOnCreation: Boolean
+      # The Availability Zone of the subnet
+      # String
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      # The IPv4 CIDR block assigned to the subnet
+      # String
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      # The IPv6 CIDR block
+      #Ipv6CidrBlock: String
+      # Indicates whether instances launched in this subnet receive a public IPv4 address
+      # Boolean
+      MapPublicIpOnLaunch: false
+      # Any tags assigned to the subnet
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+      # The ID of the VPC the subnet is in
+      # String
+      VpcId: !Ref VPC
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      # The allocation ID of an Elastic IP address to associate with the NAT gateway
+      # String
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      # The public subnet in which to create the NAT gateway
+      SubnetId: !Ref PublicSubnet1
+      # The tags (key-value pairs) to associate with this resource
+      #Tags: 
+      #  - Tag
+
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties: 
+      # Set to vpc to allocate the address for use with instances in a VPC
+      # String
+      Domain: vpc
+      # The ID of the instance
+      #InstanceId: String
+      # The ID of an address pool that you own
+      #PublicIpv4Pool: String
+      # Any tags assigned to the Elastic IP address
+      #Tags: 
+      #  - Tag
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      # The allocation ID of an Elastic IP address to associate with the NAT gateway
+      # String
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      # The public subnet in which to create the NAT gateway
+      SubnetId: !Ref PublicSubnet2
+      # The tags (key-value pairs) to associate with this resource
+      #Tags: 
+      #  - Tag
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties: 
+      # Set to vpc to allocate the address for use with instances in a VPC
+      # String
+      Domain: vpc
+      # The ID of the instance
+      #InstanceId: String
+      # The ID of an address pool that you own
+      #PublicIpv4Pool: String
+      # Any tags assigned to the Elastic IP address
+      #Tags: 
+      #  - Tag
+
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute: 
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties: 
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+  
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+Outputs: 
+  VPC: 
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPCID
+
+  VPCPublicRouteTable:
+    Description: Public Routing
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Sub ${EnvironmentName}-PUB-RT
+
+  VPCPrivateRouteTable1:
+    Description: Private Routing AZ1
+    Value: !Ref PrivateRouteTable1
+    Export:
+      Name: !Sub ${EnvironmentName}-PRI1-RT
+
+  VPCPrivateRouteTable2:
+    Description: Private Routing AZ2
+    Value: !Ref PrivateRouteTable2
+    Export:
+      Name: !Sub ${EnvironmentName}-PRI2-RT
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PUB-NETS
+
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PRIV-NETS
+
+  PublicSubnet1:
+    Description: A reference to the public subnet in the 1st Availability Zone
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${EnvironmentName}-PUB1-SN
+
+  PublicSubnet2: 
+    Description: A reference to the public subnet in the 2nd Availability Zone
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${EnvironmentName}-PUB2-SN
+
+  PrivateSubnet1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${EnvironmentName}-PRI1-SN
+
+  PrivateSubnet2: 
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${EnvironmentName}-PRI2-SN

@@ -1,0 +1,224 @@
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  RedShiftDBName:
+    Description: The name of the RedShift Database
+    Type: String
+  RedShiftUserName:
+    Description: RedShift Username
+    Type: String
+  RedShiftPassword:
+    Description: RedShift Password
+    Type: String
+  IAMPassword:
+    NoEcho: 'true'
+    Type: String
+    Description: New account password
+    MinLength: '1'
+    MaxLength: '41'
+    ConstraintDescription: the password must be between 1 and 41 characters
+Resources:
+  RedshiftSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      # A description for the security group
+      # String
+      GroupDescription: Redshift Security Group
+      # The name of the security group
+      # GroupName: String
+      # The inbound rules associated with the security group
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        FromPort: 5439
+        ToPort: 5439
+        CidrIp: 0.0.0.0/0 # Change this to my IP Address
+        Description: 'Redshift Access to VPC CIDR'  
+      # Any tags assigned to the security group
+      #Tags: 
+      #  - Tag
+      # The ID of the VPC for the security group
+      # String
+      VpcId: 
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+
+  RedshiftCluster:
+    Type: AWS::Redshift::Cluster
+    Properties: 
+      # AllowVersionUpgrade: Boolean
+      # AutomatedSnapshotRetentionPeriod: Integer
+      # AvailabilityZone: String
+      ClusterIdentifier: redshift-cluster
+      ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
+      # ClusterSecurityGroups: 
+      #   - String
+      # ClusterSubnetGroupName: String
+      ClusterType: single-node #multi-node
+      # ClusterVersion: String
+      DBName: !Ref RedShiftDBName
+      # ElasticIp: String
+      # Encrypted: Boolean
+      # HsmClientCertificateIdentifier: String
+      # HsmConfigurationIdentifier: String
+      IamRoles: 
+        - !GetAtt RedshiftIAMRole.Arn
+      KmsKeyId: rs-key
+      LoggingProperties: 
+        LoggingProperties:
+          BucketName: !Ref RedshiftLoggingS3Bucket
+          # S3KeyPrefix: String
+      MasterUsername: !Ref RedShiftUserName
+      MasterUserPassword: !Ref RedShiftPassword
+      NodeType: dc2.large
+      NumberOfNodes: 1
+      # OwnerAccount: String
+      Port: 5439
+      # PreferredMaintenanceWindow: String
+      PubliclyAccessible: false
+      # SnapshotClusterIdentifier: String
+      # SnapshotIdentifier: String
+      # Tags: 
+      #   - Tag
+      VpcSecurityGroupIds:
+        - !Ref RedshiftSecurityGroup
+
+  RedshiftClusterParameterGroup:
+    Type: AWS::Redshift::ClusterParameterGroup
+    Properties: 
+      Description: Redshift Cluster Parameter group
+      ParameterGroupFamily: redshift-1.0
+      # Parameters: 
+      #   - Parameter
+      # Tags: 
+      #   - Tag
+
+  RedshiftClusterSubnetGroup:
+    Type: AWS::Redshift::ClusterSubnetGroup
+    Properties: 
+      Description: Cluster subnet group
+      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${EnvironmentName}-PRIV-NETS'}]
+      # Tags: 
+      #   - Tag
+
+  RedShiftIAMUser:
+    Type: AWS::IAM::User
+    Properties:
+        # Creates a password for the specified user, giving the user the
+        # ability to access AWS services through the AWS Management Console
+        LoginProfile:
+            Password: !Ref 'IAMPassword'
+
+  RedShiftIAMGroup:
+    Type: AWS::IAM::Group
+
+  RedShiftIAMUsers:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+        # The name of the group to update
+        GroupName: !Ref 'RedShiftIAMGroup'
+        # A list of the names of the users that you want to add to the group
+        Users: 
+        - !Ref 'RedShiftIAMUser'
+
+  RedShiftIAMKeys:
+    Type: AWS::IAM::AccessKey
+    Properties:
+        UserName: !Ref 'RedShiftIAMUser'
+
+  RedShiftIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Groups:
+        - !Ref RedShiftIAMGroup
+      # The friendly name (not ARN) identifying the policy
+      PolicyName: RedShiftIAMUsers
+      # Adds full access to S3
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action:
+          - s3:*
+          - redshift:*
+          Resource: "*"
+  
+  RedshiftIAMRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "redshift.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      # Description: String
+      # ManagedPolicyArns: 
+      #   - String
+      # MaxSessionDuration: Integer
+      Path: "/"
+      # PermissionsBoundary: String
+      Policies: 
+        - !Ref RedShiftIAMPolicy
+      RoleName: RedshiftIAMRole
+      # Tags: 
+      #   - Tag
+        
+  RedshiftLoggingS3Bucket:
+    Type: AWS::S3::Bucket
+
+Outputs:
+  RedshiftClusterEndpoint:
+    Description: Redshift Cluster URL and port
+    Value: !Sub "${RedshiftCluster.Endpoint.Address}:${RedshiftCluster.Endpoint.Port}"
+    Export:
+      Name: !Sub '${EnvironmentName}-RedshiftClusterEndpoint'
+
+  PSQLCommandLine:    
+    Description: PSQL Command Line
+    Value: !Join
+             - ''
+             - - 'psql -h '
+               - !GetAtt 'RedshiftCluster.Endpoint.Address' 
+               - ' -p '
+               - !GetAtt 'RedshiftCluster.Endpoint.Port'
+               - ' -U '
+               - !Ref RedShiftUserName
+               - ' -d '
+               - !Ref RedShiftDBName
+
+  RedshiftParameterGroupName:
+    Description: Name of the Redshift Parameter Group
+    Value: !Ref RedshiftClusterParameterGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-RedshiftParameterGroupName'
+    
+  RedshiftDatabaseName:
+    Description: Name of the Redshift Database
+    Value: !Ref RedShiftDBName
+    Export:
+      Name: !Sub '${EnvironmentName}-RedshiftDatabaseName'
+    
+  RedshiftUsername:
+    Value: !Ref RedShiftUserName
+    Export:
+      Name: !Sub '${EnvironmentName}-RedshiftUsername'
+    
+  RedshiftLoggingS3Bucket:
+    Description: Amazon S3 bucket created for audit logging
+    Value: !Ref RedshiftLoggingS3Bucket
+    Export:
+      Name: !Sub '${EnvironmentName}-RedshiftLoggingS3Bucket'
+
+  RedShiftAccessKey:
+    Value: !Ref 'RedShiftIAMKeys'
+    Description: AWSAccessKeyId of User
+
+  RedShiftSecretKey:
+    Value: !GetAtt [RedShiftIAMKeys, SecretAccessKey]
+    Description: AWSSecretAccessKey of User

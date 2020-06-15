@@ -1,0 +1,83 @@
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  DBUsername:
+    NoEcho: 'true'
+    Description: Username for PostgresSQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBPassword:
+    NoEcho: 'true'
+    Description: Password PostgresSQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+Resources:
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      # A description for the security group
+      # String
+      GroupDescription: Allow tcp to/from our RDS Server
+      # The name of the security group
+      # GroupName: String
+      # The outbound rules associated with the security group
+      SecurityGroupEgress: 
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: 0.0.0.0/0
+      # The name of the security group
+      # GroupName: String
+      # The inbound rules associated with the security group
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: 0.0.0.0/0
+      # Any tags assigned to the security group
+      #Tags: 
+      #  - Tag
+      # The ID of the VPC for the security group
+      # String
+      VpcId: 
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+
+  DBSubnetGroup: 
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription: This associates the two public subnets with the RDS DB
+      SubnetIds: 
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+
+  PostgresDB:
+    Type: AWS::RDS::DBInstance
+    DependsOn: DBSubnetGroup
+    Properties:
+      AllocatedStorage: '20'
+      DBName: udagramdb
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      DBInstanceClass: db.t2.micro
+      Engine: postgres
+      MasterUsername: 
+          Ref: DBUsername
+      MasterUserPassword: 
+          Ref: DBPassword
+      # turn this off in prod
+      PubliclyAccessible: true
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+  
+  
+Outputs:
+  DBAddress:
+    Value: !GetAtt [PostgresDB, Endpoint.Address]
+    Description: Returns the connection endpoint for the database

@@ -1,0 +1,14 @@
+[
+    {
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "DatabaseDEV"
+    },
+    {
+      "ParameterKey": "DBUsername",
+		  "ParameterValue": "MyAdminUser"
+    },
+    {
+      "ParameterKey": "DBPassword",
+		  "ParameterValue": "PassWord123"
+    }
+]

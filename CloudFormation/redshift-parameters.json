@@ -1,0 +1,22 @@
+[
+    {
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "DatabaseDEV"
+    },
+    {
+		"ParameterKey": "RedShiftDBName",
+		"ParameterValue": "myrsdb"
+    },
+    {
+		"ParameterKey": "RedShiftUserName",
+		"ParameterValue": "AdminUser"
+    },
+    {
+		"ParameterKey": "RedShiftPassword",
+		"ParameterValue": "PassWord123"
+    },
+    {
+      "ParameterKey": "IAMPassword",
+		  "ParameterValue": "PassWord123"
+    }
+]
