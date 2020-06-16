@@ -62,7 +62,7 @@ Resources:
       # HsmConfigurationIdentifier: String
       IamRoles: 
         - !GetAtt RedshiftIAMRole.Arn
-      KmsKeyId: rs-key
+      #KmsKeyId: !Ref RedShiftIAMKeys
       # LoggingProperties:
       #   BucketName: !Ref RedshiftLoggingS3Bucket
         # S3KeyPrefix: String
@@ -85,7 +85,7 @@ Resources:
     Type: AWS::Redshift::ClusterSubnetGroup
     Properties:
       Description: Cluster subnet group
-      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${EnvironmentName}-PRIV-NETS'}]
+      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${EnvironmentName}-PUB-NETS'}]
 
   RedshiftClusterParameterGroup:
     Type: 'AWS::Redshift::ClusterParameterGroup'
@@ -228,3 +228,9 @@ Outputs:
     Description: AWSSecretAccessKey of User
     Export:
       Name: !Sub '${EnvironmentName}-SKey'
+
+  RedshiftRoleARN:
+    Description: The ARN associated with the IAM Role
+    Value: !GetAtt [RedshiftIAMRole, Arn]
+    Export:
+      Name: !Sub '${EnvironmentName}-RoleArn'
