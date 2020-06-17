@@ -1,0 +1,142 @@
+Properties:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  SparkUserName:
+    Description: Master Node's SSH User Name
+    Type: String
+  InstanceType:
+    Description: Cluster's instance type hardware configuration
+    Type: String
+
+Resources:
+  EMRCluster:
+    DependsOn:
+      - SparkIAMProfile
+      - SparkIAMRole
+      - SparkLogBucket
+    Type: AWS::EMR::Cluster
+    Properties: 
+      # AdditionalInfo: Json
+      Applications: 
+        - Name: Spark
+      # AutoScalingRole: String
+      # BootstrapActions: 
+      #   - BootstrapActionConfig
+      # Configurations: 
+      #   - Configuration
+      # CustomAmiId: String
+      # EbsRootVolumeSize: Integer
+      Instances: 
+        # AdditionalMasterSecurityGroups: 
+        #   - String
+        # AdditionalSlaveSecurityGroups: 
+        #   - String
+        # CoreInstanceFleet: 
+        #   InstanceFleetConfig
+        CoreInstanceGroup: 
+          # AutoScalingPolicy: 
+          #   AutoScalingPolicy
+          # BidPrice: String
+          # Configurations: 
+          #   - Configuration
+          # EbsConfiguration: 
+          #   EbsConfiguration
+          InstanceCount: 3
+          InstanceType: !Ref InstanceType
+          # Market: String
+          Name: core-group
+        Ec2KeyName: spark-key 
+        Ec2SubnetId:
+          Fn::ImportValue:
+            !Sub "${EnvironmentName}-PRI1-SN"
+        # Ec2SubnetIds: 
+        #   - String
+        # EmrManagedMasterSecurityGroup: String
+        # EmrManagedSlaveSecurityGroup: String
+        # HadoopVersion: String
+        # KeepJobFlowAliveWhenNoSteps: Boolean
+        # MasterInstanceFleet: 
+        #   InstanceFleetConfig
+        MasterInstanceGroup: 
+          # AutoScalingPolicy: 
+          #   AutoScalingPolicy
+          # BidPrice: String
+          # Configurations: 
+          #   - Configuration
+          # EbsConfiguration: 
+          #   EbsConfiguration
+          InstanceCount: 1
+          InstanceType: !Ref InstanceType
+          # Market: String
+          Name: master-group
+        # Placement: 
+        #   PlacementType
+        # ServiceAccessSecurityGroup: String
+        # TerminationProtected: Boolean
+      JobFlowRole: SparkIAMProfile
+      # KerberosAttributes: 
+      #   KerberosAttributes
+      LogUri: !Join [ "s3://", !Ref SparkLogBucket]
+      Name: spark-udacity
+      # ReleaseLabel: String
+      # ScaleDownBehavior: String
+      # SecurityConfiguration: String
+      ServiceRole: !Ref SparkServiceRole
+      # Steps: 
+      #   - StepConfig
+      # Tags: 
+      #   - Tag
+      # VisibleToAllUsers: Boolean
+
+  SparkIAMProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SparkIAMRole
+  
+  SparkIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role'
+      Path: /
+
+  SparkLogBucket:
+      Type: AWS::S3::Bucket
+
+  SparkServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticmapreduce.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole'
+      Path: /
+
+Outputs:
+  MasterPublicDNS:
+    Description: The public DNS name of the master node
+    Value: !GetAtt [EMRCluster, MasterPublicDNS]
+    Export:
+      Name: !Sub ${EnvironmentName}-M-DNS
+  LogBucketName:
+      Value: !Ref SparkLogBucket
+      Description: Name of the Amazon S3 bucket used to store log files.
