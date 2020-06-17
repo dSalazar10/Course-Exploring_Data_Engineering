@@ -74,7 +74,8 @@ function SetupStack {
     echo "1) Network Stack"
     echo "2) Postgres Stack"
     echo "3) Cassandra Stack"
-    echo "4) RedShift Stack"
+    echo "4) Redshift Stack"
+    echo "5) Spark Stack"
     echo "~:"
     read choice
     case $choice in
@@ -94,9 +95,14 @@ function SetupStack {
             paramfile="cassandra-parameters.json"
             ;;
         4)
-            stackname="RedShiftStack"
+            stackname="RedshiftStack"
             tempfile="redshift.yml"
             paramfile="redshift-parameters.json"
+            ;;
+        5)
+            stackname="SparkStack"
+            tempfile="spark.yml"
+            paramfile="spark-parameters.json"
             ;;
     esac
 }
