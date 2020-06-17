@@ -4,10 +4,6 @@
 		"ParameterValue": "DatabaseDEV"
     },
     {
-		"ParameterKey": "SparkUserName",
-		"ParameterValue": "hadoop"
-    },
-    {
 		"ParameterKey": "InstanceType",
 		"ParameterValue": "m3.xlarge"
     }

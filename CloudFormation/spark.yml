@@ -1,9 +1,6 @@
-Properties:
+Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
-    Type: String
-  SparkUserName:
-    Description: Master Node's SSH User Name
     Type: String
   InstanceType:
     Description: Cluster's instance type hardware configuration
@@ -12,14 +9,15 @@ Properties:
 Resources:
   EMRCluster:
     DependsOn:
-      - SparkIAMProfile
-      - SparkIAMRole
+      - SparkServiceRole
+      - SparkJobFlowRole
       - SparkLogBucket
     Type: AWS::EMR::Cluster
     Properties: 
       # AdditionalInfo: Json
       Applications: 
         - Name: Spark
+        - Name: Zeppelin
       # AutoScalingRole: String
       # BootstrapActions: 
       #   - BootstrapActionConfig
@@ -74,12 +72,12 @@ Resources:
         #   PlacementType
         # ServiceAccessSecurityGroup: String
         # TerminationProtected: Boolean
-      JobFlowRole: SparkIAMProfile
+      JobFlowRole: !Ref SparkJobFlowProfile
       # KerberosAttributes: 
       #   KerberosAttributes
-      LogUri: !Join [ "s3://", !Ref SparkLogBucket]
+      LogUri: !Sub s3://${SparkLogBucket}
       Name: spark-udacity
-      # ReleaseLabel: String
+      ReleaseLabel: emr-5.30.0
       # ScaleDownBehavior: String
       # SecurityConfiguration: String
       ServiceRole: !Ref SparkServiceRole
@@ -89,47 +87,52 @@ Resources:
       #   - Tag
       # VisibleToAllUsers: Boolean
 
+  SparkLogBucket:
+      Type: AWS::S3::Bucket
+  
+  SparkJobFlowProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SparkJobFlowRole
+        
+  SparkJobFlowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role'
+
   SparkIAMProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles:
-        - !Ref SparkIAMRole
-  
-  SparkIAMRole:
+        - !Ref SparkServiceRole
+
+  SparkServiceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: 2008-10-17
         Statement:
-          - Effect: Allow
+          - Sid: ''
+            Effect: Allow
             Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role'
+              Service: elasticmapreduce.amazonaws.com
+            Action: 'sts:AssumeRole'
       Path: /
-
-  SparkLogBucket:
-      Type: AWS::S3::Bucket
-
-  SparkServiceRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - elasticmapreduce.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole'
-      Path: /
 
 Outputs:
   MasterPublicDNS:
