@@ -75,7 +75,7 @@ Resources:
       JobFlowRole: !Ref SparkJobFlowProfile
       # KerberosAttributes: 
       #   KerberosAttributes
-      LogUri: !Sub s3://${SparkLogBucket}
+      LogUri: !Sub s3://${SparkLogBucket}/elasticmapreduce/
       Name: spark-udacity
       ReleaseLabel: emr-5.30.0
       # ScaleDownBehavior: String

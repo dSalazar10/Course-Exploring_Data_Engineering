@@ -72,10 +72,11 @@ function SetupStack {
     echo ""
     echo "Select from the following options:"
     echo "1) Network Stack"
-    echo "2) Postgres Stack"
-    echo "3) Cassandra Stack"
-    echo "4) Redshift Stack"
-    echo "5) Spark Stack"
+    echo "2) Bastion Stack"
+    echo "3) Postgres Stack"
+    echo "4) Cassandra Stack"
+    echo "5) Redshift Stack"
+    echo "6) Spark Stack"
     echo "~:"
     read choice
     case $choice in
@@ -85,21 +86,26 @@ function SetupStack {
             paramfile="network-parameters.json"
             ;;
         2)
+            stackname="BastionStack"
+            tempfile="bastion.yml"
+            paramfile="bastion-parameters.json"
+            ;;
+        3)
             stackname="PostgresStack"
             tempfile="postgres.yml"
             paramfile="postgres-parameters.json"
             ;;
-        3)
+        4)
             stackname="CassandraStack"
             tempfile="cassandra.yml"
             paramfile="cassandra-parameters.json"
             ;;
-        4)
+        5)
             stackname="RedshiftStack"
             tempfile="redshift.yml"
             paramfile="redshift-parameters.json"
             ;;
-        5)
+        6)
             stackname="SparkStack"
             tempfile="spark.yml"
             paramfile="spark-parameters.json"

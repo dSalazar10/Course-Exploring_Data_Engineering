@@ -11,7 +11,7 @@ sudo yum install -y git
 sudo yum install -y blas lapack
 
 # change the bucket name
-aws s3 cp s3://<YOUR_BUCKET>/users/<YOUR_NAME>/bootstraps $HOME/bootstraps --recursive
+aws s3 cp s3://<YOUR_BUCKET>/users/hadoop/bootstraps $HOME/bootstraps --recursive
 
 # Set spark home (so that findspark finds spark)
 echo '
