@@ -131,3 +131,5 @@ dmypy.json
 *.gz
 *.json
 Code/Pipelines/home/.DS_Store
+Code/Pipelines/home/airflow/.DS_Store
+Code/Pipelines/home/airflow/dags/.DS_Store
