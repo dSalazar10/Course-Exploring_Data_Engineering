@@ -17,7 +17,8 @@ Resources:
       # AdditionalInfo: Json
       Applications: 
         - Name: Spark
-        - Name: Zeppelin
+        - Name: Hadoop
+        - Name: Livy
       # AutoScalingRole: String
       # BootstrapActions: 
       #   - BootstrapActionConfig
