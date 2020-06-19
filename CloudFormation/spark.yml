@@ -36,8 +36,14 @@ Resources:
           # AutoScalingPolicy: 
           #   AutoScalingPolicy
           # BidPrice: String
-          # Configurations: 
-          #   - Configuration
+          # Configurations:
+          #   - Classification: hbase-site
+          #     ConfigurationProperties: 
+          #       hbase.rootdir : !Sub s3://${SparkLogBucket}/data
+          #     Configurations:
+          #     - Classification: hbase
+          #       ConfigurationProperties:
+          #         hbase.emr.storageMode: s3
           # EbsConfiguration: 
           #   EbsConfiguration
           InstanceCount: 3
@@ -75,7 +81,7 @@ Resources:
       JobFlowRole: !Ref SparkJobFlowProfile
       # KerberosAttributes: 
       #   KerberosAttributes
-      LogUri: !Sub s3://${SparkLogBucket}/elasticmapreduce/
+      LogUri: !Sub s3://${SparkLogBucket}/logs/
       Name: spark-udacity
       ReleaseLabel: emr-5.30.0
       # ScaleDownBehavior: String
@@ -111,13 +117,6 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role'
-
-  SparkIAMProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: /
-      Roles:
-        - !Ref SparkServiceRole
 
   SparkServiceRole:
     Type: AWS::IAM::Role
