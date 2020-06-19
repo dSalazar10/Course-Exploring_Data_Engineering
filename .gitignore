@@ -133,3 +133,6 @@ dmypy.json
 Code/Pipelines/home/.DS_Store
 Code/Pipelines/home/airflow/.DS_Store
 Code/Pipelines/home/airflow/dags/.DS_Store
+Code/Airflow/home/.DS_Store
+Code/Airflow/home/airflow/.DS_Store
+Code/Airflow/home/airflow/dags/.DS_Store
